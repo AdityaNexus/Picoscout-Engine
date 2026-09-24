@@ -1,0 +1,28 @@
+# Reasearch Report : Latest developments in agentic AI frameworks
+
+### Research Summary: Latest Developments in Agentic AI Frameworks  
+
+#### **Agentic AI Frameworks Overview**  
+Agentic AI frameworks represent a transformative shift in AI systems, enabling autonomous decision-making and execution of tasks without direct human intervention. These frameworks integrate AI with business logic to create systems capable of learning, adapting, and performing complex operations. Key developments include the rise of frameworks that prioritize **state persistence**, **latency optimization**, and **cost efficiency**, as highlighted in recent reports.  
+
+#### **Latest Trends in Agentic AI**  
+1. **Integration of AI into Business Logic**: Agentic AI frameworks are designed to embed AI into existing business workflows, allowing systems to perform tasks such as purchasing, payments, and customer service without requiring human oversight. This integration is driven by the need for **autonomy and real-time decision-making**.  
+2. **Architectural Evolution**: The future of agentic AI lies in **long-running, goal-driven software** that evolves over time. This includes frameworks that prioritize **orchestration**, **observability**, and **production readiness**, ensuring systems can scale and adapt to changing business needs.  
+3. **State Persistence and Latency Optimization**: Frameworks like LangGraph, CrewAI, and ADK emphasize **state persistence**, **latency reduction**, and **cost efficiency** to enable seamless operations. These features are critical for real-world applications where performance and reliability are paramount.  
+
+#### **Top Agentic AI Frameworks in 2026**  
+- **LangGraph**: A comprehensive framework that evaluates AI agents across orchestration, observability, and production readiness, with a focus on state persistence, latency, and cost.  
+- **CrewAI**: A platform that supports AI agents with robust performance metrics, including latency and cost, making it suitable for enterprise applications.  
+- **Microsoft Agent Framework**: A scalable framework that integrates AI with enterprise software, offering tools for monitoring and managing AI agents.  
+- **ADK**: A framework known for its efficiency in handling complex tasks, particularly in scenarios requiring high throughput.  
+
+#### **Key Developments and Evaluations**  
+- A **matrix** comparing top agentic AI frameworks in 2026 highlights the strengths and limitations of each, aiding developers in selecting the most suitable framework for specific use cases.  
+- The **Top 9 AI Agent Frameworks** (Shakudo Blog, 2026) emphasize the importance of frameworks that support **autonomous systems**, **real-time decision-making**, and **scalability**.  
+
+### References  
+- [DuckDuckGo](https://aimultiple.com/agentic-ai-trends) · [Latest Advances in Agentic AI](https://www.linkedin.com/pulse/latest-advances-agentic-ai-architectures-frameworks-ramachandran-ry3fe) · [Agentic AI Frameworks: Complete Guide & Matrix](https://aiagentskit.com/blog/agentic-ai-frameworks/) · [The best AI agent frameworks in 2026](https://www.langchain.com/resources/ai-agent-frameworks) · [Top Agentic AI Platforms and Frameworks in 2026](https://www.analyticsinsight.net/ai-tools/best-agentic-ai-tools-platforms-and-frameworks-in-2026)  
+
+### References  
+- [Wikipedia](https://en.wikipedia.org/wiki/Agentic_commerce) (Note: Wikipedia entry contains an error, likely due to a formatting issue).  
+- [ArXiv](https://arxiv.org) (Note: Search error; no relevant data found).
