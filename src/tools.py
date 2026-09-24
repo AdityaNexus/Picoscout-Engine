@@ -2,6 +2,7 @@ import json
 from ddgs import DDGS
 import wikipedia
 import arxiv
+from concurrent.futures import ThreadPoolExecutor
 
 def search_duckduckgo(query: str, max_results : int =3)->str:
     try:
