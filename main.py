@@ -20,7 +20,7 @@ def main():
     
     print(f"\n🚀 Starting Research Graph for: '{query}'...\n")
     
-    for event in graph.stream(initial_state):
+    for event in graph.stream(initial_state,stream_mode = "updates"):
         for node_name, output in event.items():
             print(f"--- Completed Node: {node_name} ---")
             if node_name == "planner":

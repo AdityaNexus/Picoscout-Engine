@@ -1,90 +1,140 @@
 import json
 import re
+
 from src.llm import get_llm
 
 
 def planner_node(state: dict) -> dict:
-    llm = get_llm(temperature=0.0)
+
+    # Planner does NOT need a reasoning model to think extensively.
+    llm = get_llm(
+        temperature=0.0,
+        max_tokens=300
+    )
 
     query = state["original_query"]
 
-    prompt = f"""
-You are a research planning agent.
+        PLANNER_PROMPT = """/no_think
 
-Your task is to decompose the user's research question into
-the smallest useful set of independent search queries.
+You are a search query decomposition engine.
 
-You decide:
-- how many queries are needed
-- what each query should investigate
-- how to combine related aspects
+Your ONLY task is to convert the user's question into
+the minimum number of search queries required to answer it.
 
-Rules:
+RULES:
 
-1. Identify every important entity, subject, aspect, metric,
-   comparison criterion, and use case in the question.
+1. Generate between 1 and 5 queries. This is a hard limit — NEVER exceed 5,
+   even for complex multi-part or multi-entity questions.
+2. Generate ONLY necessary queries.
+3. Simple questions usually require 1 query.
+4. When comparing MULTIPLE entities across MULTIPLE attributes, combine ALL
+   attributes for ONE entity into a SINGLE query. Do NOT create a separate
+   query per attribute — that causes query explosion and is not allowed.
+5. Preserve model names, technologies, metrics, versions, algorithms, and
+   important domain terminology.
+6. Each query must be useful as an independent search query.
+7. Do NOT explain your reasoning, generate answers, or generate markdown.
+8. Output ONLY a valid JSON array of strings.
 
-2. Preserve important context from the original question.
-   For example, if the question specifies a workload, domain,
-   time period, population, or use case, include that context
-   in relevant search queries.
+Example (2 entities):
 
-3. Do not lose important requirements from the original question.
-
-4. Create focused queries that provide good coverage.
-
-5. Combine related aspects when one query can effectively
-   retrieve information for them.
-
-6. Separate aspects when combining them would make the query
-   too broad.
-
-7. Do not use a fixed number of queries.
-   You decide the appropriate number.
-
-8. Do not create unnecessary duplicate queries.
-
-9. Do not invent information or requirements.
-
-10. Each query must be understandable on its own.
-
-11. Queries should be concise and suitable for web search,
-    Wikipedia, or academic search.
-
-12. Do not answer the user's question.
-
-13. Return ONLY a valid JSON array of strings.
-
-User question:
-{query}
+User:
+Compare Rust and Go for high-concurrency microservices.
 
 Output:
-"""
-    response = llm.invoke(prompt).content.strip()
+[
+  "Rust Tokio async concurrency microservices performance",
+  "Go goroutines channels concurrency microservices performance",
+  "Rust vs Go high concurrency microservices benchmark comparison"
+]
 
+Example (3 entities, 3 attributes — each entity's attributes are combined
+into ONE query, not split per attribute):
+
+User:
+Compare AWS Lambda, GCP Cloud Functions, and Azure Functions for serverless
+compute: cold start latency, pricing, and max execution duration.
+
+Output:
+[
+  "AWS Lambda cold start latency pricing max execution duration",
+  "GCP Cloud Functions cold start latency pricing max execution duration",
+  "Azure Functions cold start latency pricing max execution duration",
+  "AWS Lambda vs GCP Cloud Functions vs Azure Functions serverless benchmark comparison"
+]
+
+User:
+How does ChromaDB work?
+
+Output:
+[
+  "ChromaDB vector database architecture embeddings retrieval"
+]
+
+USER QUESTION:
+{query}
+
+OUTPUT:
+"""
     try:
-        match = re.search(r"\[.*\]", response, re.DOTALL)
+
+        response = llm.invoke(
+            PLANNER_PROMPT.format(query=query)
+        ).content.strip()
+
+        print("\n===== RAW PLANNER OUTPUT =====")
+        print(response)
+        print("================================\n")
+
+        # Find first JSON array.
+        match = re.search(
+            r"\[[\s\S]*?\]",
+            response
+        )
 
         if not match:
-            raise ValueError("No JSON array found")
+            raise ValueError(
+                "Planner did not return a JSON array"
+            )
 
         queries = json.loads(match.group(0))
 
         if not isinstance(queries, list):
-            raise ValueError("Planner output is not a list")
+            raise ValueError(
+                "Planner output is not a list"
+            )
 
-        queries = [
-            q.strip()
-            for q in queries
-            if isinstance(q, str) and q.strip()
-        ]
+        # Validate + clean
+        cleaned = []
+
+        for q in queries:
+
+            if not isinstance(q, str):
+                continue
+
+            q = q.strip()
+
+            if not q:
+                continue
+
+            cleaned.append(q)
+
+        # Hard safety limit
+        queries = cleaned[:5]
+
+        # Remove duplicates
+        queries = list(dict.fromkeys(queries))
+
+        # Never allow empty planner output
+        if not queries:
+            queries = [query]
 
     except Exception as e:
-        print(f"Planner error: {e}")
-        queries = [query]
 
-    # Remove duplicates while preserving order
-    queries = list(dict.fromkeys(queries))
+        print(f"Planner error: {e}")
+
+        # Safe fallback
+        queries = [query]
 
     print("\n===== GENERATED SEARCH QUERIES =====")
 
