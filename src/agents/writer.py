@@ -48,7 +48,8 @@ INSTRUCTIONS:
 3. Copy exact numbers, specs, and metrics directly from the sources.
 4. If a detail is still missing, write "Not provided in search results."
 5. Do NOT invent, estimate, or guess.
-6. Output clean Markdown only.
+6. Output clean Markdown only. Do NOT add a references/sources section —
+   that is added automatically afterward.
 
 SEARCH SOURCES:
 {clean_evidence_text}
@@ -69,8 +70,11 @@ INSTRUCTIONS:
 3. If a detail is missing, write "Not provided in search results."
 4. Do NOT invent, estimate, or guess.
 5. Output clean Markdown only.
-6.6. Structure your answer as: one direct sentence answering the question first,
+6. Structure your answer as: one direct sentence answering the question first,
    then supporting details with specific facts from the sources below it.
+7. Do NOT add a references/sources section — that is added automatically
+   afterward.
+
 SEARCH SOURCES:
 {clean_evidence_text}
 
@@ -85,4 +89,7 @@ ANSWER:
     print("================================\n")
 
     cleaned = _strip_think(raw)
-    return {"draft_content": cleaned or "Not provided in search results."}
+    return {
+        "draft_content": cleaned or "Not provided in search results.",
+        "cited_evidence": evidence,  # pass along exactly what the writer actually saw
+    }

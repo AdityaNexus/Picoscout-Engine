@@ -2,148 +2,60 @@ import json
 import re
 
 from src.llm import get_llm
+PLANNER_PROMPT = """You are a search query decomposition engine for a moderate-scope
+research agent — not a deep-research system. Think through the decomposition,
+then give your final answer.
 
+GOAL: Convert the user's question into the minimum number of search queries
+needed to answer it well.
 
-def planner_node(state: dict) -> dict:
+HARD CONSTRAINTS (never violate these):
+- Never output more than 5 queries.
+- If the question compares multiple named entities, each entity gets exactly
+  ONE query covering all of its relevant attributes together.
+- Preserve exact model names, technologies, metrics, versions, and domain terms.
+- Final output must be ONLY a JSON object with "entities" (compared subjects,
+  empty list if none) and "queries" — no prose before or after it.
 
-    # Planner does NOT need a reasoning model to think extensively.
-    llm = get_llm(
-        temperature=0.0,
-        max_tokens=300
-    )
-
-    query = state["original_query"]
-
-        PLANNER_PROMPT = """/no_think
-
-You are a search query decomposition engine.
-
-Your ONLY task is to convert the user's question into
-the minimum number of search queries required to answer it.
-
-RULES:
-
-1. Generate between 1 and 5 queries. This is a hard limit — NEVER exceed 5,
-   even for complex multi-part or multi-entity questions.
-2. Generate ONLY necessary queries.
-3. Simple questions usually require 1 query.
-4. When comparing MULTIPLE entities across MULTIPLE attributes, combine ALL
-   attributes for ONE entity into a SINGLE query. Do NOT create a separate
-   query per attribute — that causes query explosion and is not allowed.
-5. Preserve model names, technologies, metrics, versions, algorithms, and
-   important domain terminology.
-6. Each query must be useful as an independent search query.
-7. Do NOT explain your reasoning, generate answers, or generate markdown.
-8. Output ONLY a valid JSON array of strings.
-
-Example (2 entities):
-
-User:
-Compare Rust and Go for high-concurrency microservices.
-
-Output:
-[
-  "Rust Tokio async concurrency microservices performance",
-  "Go goroutines channels concurrency microservices performance",
-  "Rust vs Go high concurrency microservices benchmark comparison"
-]
-
-Example (3 entities, 3 attributes — each entity's attributes are combined
-into ONE query, not split per attribute):
-
-User:
-Compare AWS Lambda, GCP Cloud Functions, and Azure Functions for serverless
-compute: cold start latency, pricing, and max execution duration.
-
-Output:
-[
-  "AWS Lambda cold start latency pricing max execution duration",
-  "GCP Cloud Functions cold start latency pricing max execution duration",
-  "Azure Functions cold start latency pricing max execution duration",
-  "AWS Lambda vs GCP Cloud Functions vs Azure Functions serverless benchmark comparison"
-]
-
-User:
-How does ChromaDB work?
-
-Output:
-[
-  "ChromaDB vector database architecture embeddings retrieval"
-]
+Example:
+User: Compare Rust and Go for high-concurrency microservices.
+Output: {{"entities": ["Rust", "Go"], "queries": ["Rust Tokio async concurrency microservices performance", "Go goroutines channels concurrency microservices performance", "Rust vs Go high concurrency microservices benchmark comparison"]}}
 
 USER QUESTION:
 {query}
 
 OUTPUT:
 """
+
+def planner_node(state: dict) -> dict:
+    llm = get_llm(max_tokens=1000, thinking=True)  # 300 was sized for no_think; thinking needs headroom
+    query = state["original_query"]
+
+    response = llm.invoke(PLANNER_PROMPT.format(query=query)).content.strip()
+     # cheap insurance — server should already split this via --reasoning-format
+
+    print("\n===== RAW PLANNER OUTPUT =====")
+    print(response)
+    print("================================\n")
+
     try:
-
-        response = llm.invoke(
-            PLANNER_PROMPT.format(query=query)
-        ).content.strip()
-
-        print("\n===== RAW PLANNER OUTPUT =====")
-        print(response)
-        print("================================\n")
-
-        # Find first JSON array.
-        match = re.search(
-            r"\[[\s\S]*?\]",
-            response
-        )
-
-        if not match:
-            raise ValueError(
-                "Planner did not return a JSON array"
-            )
-
-        queries = json.loads(match.group(0))
-
-        if not isinstance(queries, list):
-            raise ValueError(
-                "Planner output is not a list"
-            )
-
-        # Validate + clean
-        cleaned = []
-
-        for q in queries:
-
-            if not isinstance(q, str):
-                continue
-
-            q = q.strip()
-
-            if not q:
-                continue
-
-            cleaned.append(q)
-
-        # Hard safety limit
-        queries = cleaned[:5]
-
-        # Remove duplicates
-        queries = list(dict.fromkeys(queries))
-
-        # Never allow empty planner output
-        if not queries:
-            queries = [query]
-
+        match = re.search(r"\{[\s\S]*\}", response)
+        parsed = json.loads(match.group(0))
+        entities = [e.strip() for e in parsed.get("entities", []) if isinstance(e, str) and e.strip()]
+        queries = list(dict.fromkeys(
+            q.strip() for q in parsed.get("queries", []) if isinstance(q, str) and q.strip()
+        ))[:5]
     except Exception as e:
-
         print(f"Planner error: {e}")
+        entities, queries = [], [query]
 
-        # Safe fallback
+    # unchanged from before — this stays regardless of thinking mode
+    covered = {e for e in entities if any(e.lower() in q.lower() for q in queries)}
+    for e in entities:
+        if e not in covered and len(queries) < 5:
+            queries.append(e)
+
+    if not queries:
         queries = [query]
 
-    print("\n===== GENERATED SEARCH QUERIES =====")
-
-    for i, q in enumerate(queries, 1):
-        print(f"{i}. {q}")
-
-    print(f"\nTotal queries: {len(queries)}")
-    print("====================================\n")
-
-    return {
-        "search_queries": queries
-    }
+    return {"search_queries": queries, "entities": entities}

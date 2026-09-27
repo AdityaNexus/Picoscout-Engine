@@ -14,7 +14,7 @@ tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 # Tavily
 # ============================================================
 
-def search_duckduckgo(query: str, max_results: int = 1) -> list[dict]:
+def search_duckduckgo(query: str, max_results: int = 2) -> list[dict]:
     try:
         results = list(DDGS().text(query, max_results=max_results))
         formatted = []
