@@ -1,8 +1,8 @@
 # PicScout
 
-**A fast, moderate-depth search agent that runs on a small (~1.7B parameter) local model, CPU-only.**
+**A lightweight, moderate-depth search agent that runs on a small (~1.7B parameter) local model, on a plain CPU or with a GPU if you have one.**
 
-PicScout takes a question, breaks it into a few focused web searches, gathers evidence, writes an evidence-grounded report, has it reviewed once, and saves the result as a Markdown file with a References list. It is deliberately **not** a deep-research system. The goal is a quick, factual, well-scoped answer that can run entirely on your own machine, or be dropped into a larger project as a sub-graph or a tool.
+PicScout takes a question, breaks it into a few focused web searches, gathers evidence, writes an evidence-grounded report, has it reviewed once, and saves the result as a Markdown file with a References list. It is deliberately **not** a deep-research system. The goal is a focused, factual, well-scoped answer that can run entirely on your own machine, or be dropped into a larger project as a sub-graph or a tool.
 
 ---
 
@@ -174,7 +174,17 @@ PicScout needs no GPU. Q8_0 quantization of a 1.7B model is small enough for ord
 - Prompts are kept small on purpose (see the context table above).
 - The heaviest non-LLM cost is the web search, not the model.
 
-Actual speed depends on your CPU, thread count and how many revisions a question triggers, so measure it on your own hardware. To find bottlenecks, watch the per-node prints in the terminal.
+**CPU is slower than GPU.** Running on CPU makes PicScout accessible (no GPU, no API bill, everything local), but a full run takes noticeably longer than the same model on a GPU. Total time depends on your CPU, thread count, how much the planner and editor reason, and whether a question triggers a revision.
+
+Ways to speed it up:
+
+- Use a GPU build and remove `--device none` (add `-ngl 99` to offload all layers).
+- Try a `Q4_K_M` quant instead of `Q8_0`. It is smaller and usually faster on CPU, with a small quality cost.
+- Set the thread count with `-t` to match your physical cores.
+- Turn off reasoning for the planner and editor (`/no_think`) and lower the `max_tokens` of each node.
+- Reduce the evidence kept by the writer (fewer items or fewer characters per source).
+
+To find where the time goes, wrap each node in a timer and read the per-node seconds in the terminal.
 
 ---
 
