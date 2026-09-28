@@ -28,11 +28,11 @@ OUTPUT:
 """
 
 def planner_node(state: dict) -> dict:
-    llm = get_llm(max_tokens=1000, thinking=True)  # 300 was sized for no_think; thinking needs headroom
+    llm = get_llm(max_tokens=1000, thinking=True)  
     query = state["original_query"]
 
     response = llm.invoke(PLANNER_PROMPT.format(query=query)).content.strip()
-     # cheap insurance — server should already split this via --reasoning-format
+    
 
     print("\n===== RAW PLANNER OUTPUT =====")
     print(response)

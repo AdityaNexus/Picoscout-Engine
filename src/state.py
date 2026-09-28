@@ -16,3 +16,4 @@ class ResearchState(TypedDict):
     is_acceptable: bool
     final_output_path: str
     context : str
+    cited_evidence: list[dict]
