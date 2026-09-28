@@ -1,7 +1,7 @@
 import os
 import re
 from datetime import datetime
-
+import time
 from langgraph.graph import StateGraph, END
 
 from src.state import ResearchState
@@ -11,6 +11,13 @@ from src.agents.editor import editor_node
 from src.agents.reflector import reflector_node
 from src.tools import execute_research_tools
 
+def timed(name, fn):
+    def wrapper(state):
+        t = time.perf_counter()
+        out = fn(state)
+        print(f"⏱ {name}: {time.perf_counter() - t:.1f}s")
+        return out
+    return wrapper
 
 def research_node(state: ResearchState):
     queries = state["search_queries"]
@@ -78,8 +85,7 @@ def exporter_node(state: dict) -> dict:
 
 
 def route_after_writer(state: dict) -> str:
-    # revision_count is 0 only on the very first writer pass. Editor sets it
-    # to 1 when it runs, so a revised draft skips straight to export.
+
     return "editor" if state.get("revision_count", 0) == 0 else "exporter"
 
 
@@ -90,12 +96,12 @@ def route_after_editor(state: dict) -> str:
 def build_graph():
     builder = StateGraph(ResearchState)
 
-    builder.add_node("planner", planner_node)
-    builder.add_node("researcher", research_node)
-    builder.add_node("writer", writer_node)
-    builder.add_node("editor", editor_node)
-    builder.add_node("reflector", reflector_node)
-    builder.add_node("exporter", exporter_node)
+    builder.add_node("planner", timed("planner", planner_node))
+    builder.add_node("researcher", timed("researcher", research_node))
+    builder.add_node("writer", timed("writer", writer_node))
+    builder.add_node("editor", timed("editor", editor_node))
+    builder.add_node("reflector", timed("reflector", reflector_node))
+    builder.add_node("exporter", timed("exporter", exporter_node))
 
     builder.set_entry_point("planner")
 
